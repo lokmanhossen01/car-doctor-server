@@ -35,16 +35,19 @@ const client = new MongoClient(uri, {
 
 // middlewares 
 const logger = async(req, res, next) => {
-    console.log('called:', req.host, req.originalUrl)
+    // console.log('called:', req.host, req.originalUrl)
+    console.log('log: info',req.method, req.url); //module: 61-4
     next();
 }
 
 const verifyToken = async(req, res, next) => {
-    const token = req.cookies?.token; 
-    console.log('value of token in middleware', token)
+    const token = req?.cookies?.token; 
+    // console.log('value of token in middleware', token)
+    // no token available 
     if(!token) {
         return res.status(401).send({message: 'unauthorized access'})
     }
+
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
         // error 
         if(err) {
@@ -52,7 +55,7 @@ const verifyToken = async(req, res, next) => {
             return res.status(401).send({message: 'unauthorized access'})
         }
         // if token is valid than it would be decoded
-        console.log('value in the token', decoded)
+        // console.log('value in the token', decoded)
         req.user = decoded;
         next();
     })
@@ -82,6 +85,12 @@ async function run() {
         .send({success: true})
     })
 
+    app.post('/logout', async(req, res) => {
+        const user = req.body; 
+        console.log('logging out',user)
+        res.clearCookie('token', {maxAge: 0}).send({success:true})
+    })
+
 
     //Load All Service Data
     app.get('/services', logger, async(req, res) => {
@@ -109,10 +118,12 @@ async function run() {
     })
 
     //Load Some Service Data
+    // bookings
     app.get('/bookings', logger, verifyToken, async(req, res) => {
         console.log(req.query.email);
         // console.log('ttt token', req.cookies.token )
         console.log('user in the valid token', req.user)
+        // console.log('cook cookies', req.cookies)
         if(req.query.email !== req.user.email) {
             return res.status(403).send({message: 'forbidden access'})
         }
